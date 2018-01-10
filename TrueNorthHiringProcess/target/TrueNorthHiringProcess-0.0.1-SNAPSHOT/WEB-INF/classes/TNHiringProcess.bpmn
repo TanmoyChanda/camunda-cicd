@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://activiti.org/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd" id="_AZT3sLVfEeei3YZrHL-vdg" exporter="camunda modeler" exporterVersion="2.7.0" targetNamespace="http://activiti.org/bpmn">
+  <bpmn2:process id="TNHiringProcess" name="TNHiringProcess" isExecutable="true">
+    <bpmn2:startEvent id="CreateJR" name="Create New JR">
+      <bpmn2:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="positionTitle" label="Position" type="string"/>
+          <camunda:formField id="location" label="Location" type="string"/>
+          <camunda:formField id="preferredIndustry" label="Industry" type="string"/>
+          <camunda:formField id="interviewers" label="Interviewers List" type="string"/>
+          <camunda:formField id="requestor" label="Requestor" type="string" defaultValue="demo"/>
+          <camunda:formField id="hrLead" label="HR Lead" type="string"/>
+        </camunda:formData>
+      </bpmn2:extensionElements>
+      <bpmn2:outgoing>SendForDataProcessing</bpmn2:outgoing>
+    </bpmn2:startEvent>
+    <bpmn2:serviceTask id="ProcessJRData" camunda:class="com.tn.hiringprocess.bpm.service.impl.TNHiringJRJavaDelegateServiceImpl" name="Process Data and Send Notifications">
+      <bpmn2:incoming>SendForDataProcessing</bpmn2:incoming>
+      <bpmn2:outgoing>SendForJRReview</bpmn2:outgoing>
+    </bpmn2:serviceTask>
+    <bpmn2:sequenceFlow id="SendForDataProcessing" name="" sourceRef="CreateJR" targetRef="ProcessJRData"/>
+    <bpmn2:userTask id="JRReview" camunda:assignee="#{requestorAndStakeholder}" name="JR Review">
+      <bpmn2:incoming>SendForJRReview</bpmn2:incoming>
+      <bpmn2:incoming>SendForCorrection</bpmn2:incoming>
+      <bpmn2:outgoing>SendForHRLeadReview</bpmn2:outgoing>
+      <bpmn2:multiInstanceLoopCharacteristics camunda:collection="${requestorAndStakeholders}" camunda:elementVariable="requestorAndStakeholder"/>
+    </bpmn2:userTask>
+    <bpmn2:sequenceFlow id="SendForJRReview" name="" sourceRef="ProcessJRData" targetRef="JRReview"/>
+    <bpmn2:userTask id="JRLeadReview" camunda:assignee="#{HRLead}" name="TN HR Lead Review">
+      <bpmn2:incoming>SendForHRLeadReview</bpmn2:incoming>
+      <bpmn2:outgoing>SendForDecisionRouting</bpmn2:outgoing>
+    </bpmn2:userTask>
+    <bpmn2:sequenceFlow id="SendForHRLeadReview" name="" sourceRef="JRReview" targetRef="JRLeadReview"/>
+    <bpmn2:exclusiveGateway id="ApprovedGateway" name="Approved?" default="SendForCorrection">
+      <bpmn2:incoming>SendForDecisionRouting</bpmn2:incoming>
+      <bpmn2:outgoing>SendForCorrection</bpmn2:outgoing>
+      <bpmn2:outgoing>SendForJRCompleting</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:sequenceFlow id="SendForDecisionRouting" name="" sourceRef="JRLeadReview" targetRef="ApprovedGateway"/>
+    <bpmn2:sequenceFlow id="SendForCorrection" name="No" sourceRef="ApprovedGateway" targetRef="JRReview"/>
+    <bpmn2:endEvent id="JRApproved" name="Approved">
+      <bpmn2:incoming>SendForJRCompleting</bpmn2:incoming>
+    </bpmn2:endEvent>
+    <bpmn2:sequenceFlow id="SendForJRCompleting" name="Yes" sourceRef="ApprovedGateway" targetRef="JRApproved">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression"><![CDATA[#{action.equals("yes")}]]></bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="TNHiringProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_3" bpmnElement="CreateJR">
+        <dc:Bounds height="36.0" width="36.0" x="90.0" y="184.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_ServiceTask_2" bpmnElement="ProcessJRData">
+        <dc:Bounds height="80.0" width="100.0" x="176.0" y="162.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_1" bpmnElement="SendForDataProcessing" sourceElement="_BPMNShape_StartEvent_3" targetElement="_BPMNShape_ServiceTask_2">
+        <di:waypoint xsi:type="dc:Point" x="126.0" y="202.0"/>
+        <di:waypoint xsi:type="dc:Point" x="176.0" y="202.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_UserTask_2" bpmnElement="JRReview">
+        <dc:Bounds height="80.0" width="100.0" x="326.0" y="162.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_3" bpmnElement="SendForJRReview" sourceElement="_BPMNShape_ServiceTask_2" targetElement="_BPMNShape_UserTask_2">
+        <di:waypoint xsi:type="dc:Point" x="276.0" y="202.0"/>
+        <di:waypoint xsi:type="dc:Point" x="326.0" y="202.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_UserTask_4" bpmnElement="JRLeadReview">
+        <dc:Bounds height="80.0" width="100.0" x="476.0" y="162.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_5" bpmnElement="SendForHRLeadReview" sourceElement="_BPMNShape_UserTask_2" targetElement="_BPMNShape_UserTask_4">
+        <di:waypoint xsi:type="dc:Point" x="426.0" y="202.0"/>
+        <di:waypoint xsi:type="dc:Point" x="476.0" y="202.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_ExclusiveGateway_2" bpmnElement="ApprovedGateway" isMarkerVisible="true">
+        <dc:Bounds height="50.0" width="50.0" x="626.0" y="177.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_6" bpmnElement="SendForDecisionRouting" sourceElement="_BPMNShape_UserTask_4" targetElement="_BPMNShape_ExclusiveGateway_2">
+        <di:waypoint xsi:type="dc:Point" x="576.0" y="202.0"/>
+        <di:waypoint xsi:type="dc:Point" x="626.0" y="202.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_7" bpmnElement="SendForCorrection" sourceElement="_BPMNShape_ExclusiveGateway_2" targetElement="_BPMNShape_UserTask_2">
+        <di:waypoint xsi:type="dc:Point" x="651.0" y="177.0"/>
+        <di:waypoint xsi:type="dc:Point" x="651.0" y="106.0"/>
+        <di:waypoint xsi:type="dc:Point" x="376.0" y="106.0"/>
+        <di:waypoint xsi:type="dc:Point" x="376.0" y="162.0"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds height="6.0" width="6.0" x="619.0" y="106.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_EndEvent_2" bpmnElement="JRApproved">
+        <dc:Bounds height="36.0" width="36.0" x="726.0" y="184.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_8" bpmnElement="SendForJRCompleting" sourceElement="_BPMNShape_ExclusiveGateway_2" targetElement="_BPMNShape_EndEvent_2">
+        <di:waypoint xsi:type="dc:Point" x="676.0" y="202.0"/>
+        <di:waypoint xsi:type="dc:Point" x="726.0" y="202.0"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>
